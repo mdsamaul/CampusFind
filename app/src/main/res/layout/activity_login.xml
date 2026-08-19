@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
+    android:fitsSystemWindows="true"
     android:background="@color/background">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -13,10 +14,10 @@
 
         <ImageView
             android:id="@+id/ivLoginLogo"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
             android:layout_marginTop="32dp"
-            android:src="@drawable/ic_app_logo"
+            android:src="@drawable/app_logo"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -90,6 +91,30 @@
             app:cornerRadius="8dp"
             app:layout_constraintTop_toBottomOf="@id/tvForgotPassword" />
 
+        <TextView
+            android:id="@+id/tvOr"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="OR"
+            android:textColor="@color/outline"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/btnLogin" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGoogleLogin"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="16dp"
+            android:text="Continue with Google"
+            app:cornerRadius="8dp"
+            app:icon="@drawable/ic_google"
+            app:iconGravity="textStart"
+            app:iconTint="@null"
+            app:layout_constraintTop_toBottomOf="@id/tvOr" />
+
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -97,7 +122,7 @@
             android:orientation="horizontal"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/btnLogin">
+            app:layout_constraintTop_toBottomOf="@id/btnGoogleLogin">
 
             <TextView
                 android:layout_width="wrap_content"

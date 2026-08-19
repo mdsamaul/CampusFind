@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
+    android:fitsSystemWindows="true"
     android:background="@color/background">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -68,7 +69,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:scaleType="centerCrop"
-                    android:src="@drawable/ic_image" />
+                    android:src="@drawable/app_logo" />
 
                 <LinearLayout
                     android:id="@+id/layoutUpload"
