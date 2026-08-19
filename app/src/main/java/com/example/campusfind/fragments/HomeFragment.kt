@@ -7,7 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.campusfind.PostItemActivity
+import com.example.campusfind.MainActivity
 import com.example.campusfind.adapters.ItemAdapter
 import com.example.campusfind.databinding.FragmentHomeBinding
 import com.example.campusfind.models.Item
