@@ -1,41 +1,46 @@
 package com.example.campusfind;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.view.MotionEvent;
 import android.widget.Toast;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.campusfind.databinding.ActivityMapPickerBinding;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 
-public class MapPickerActivity extends AppCompatActivity implements OnMapReadyCallback {
+import org.osmdroid.config.Configuration;
+import org.osmdroid.events.MapEventsReceiver;
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.CustomZoomButtonsController;
+import org.osmdroid.views.overlay.MapEventsOverlay;
+import org.osmdroid.views.overlay.Marker;
 
-    private GoogleMap mMap;
+public class MapPickerActivity extends AppCompatActivity {
+
     private ActivityMapPickerBinding binding;
-    private LatLng selectedLatLng;
+    private GeoPoint selectedPoint;
+    private Marker marker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        // OSM Configuration
+        Context ctx = getApplicationContext();
+        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
+        
         binding = ActivityMapPickerBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        if (mapFragment != null) {
-            mapFragment.getMapAsync(this);
-        }
+        setupMap();
 
         binding.btnConfirmLocation.setOnClickListener(v -> {
-            if (selectedLatLng != null) {
+            if (selectedPoint != null) {
                 Intent resultIntent = new Intent();
-                resultIntent.putExtra("lat", selectedLatLng.latitude);
-                resultIntent.putExtra("lng", selectedLatLng.longitude);
+                resultIntent.putExtra("lat", selectedPoint.getLatitude());
+                resultIntent.putExtra("lng", selectedPoint.getLongitude());
                 setResult(RESULT_OK, resultIntent);
                 finish();
             } else {
@@ -44,18 +49,57 @@ public class MapPickerActivity extends AppCompatActivity implements OnMapReadyCa
         });
     }
 
+    private void setupMap() {
+        binding.map.setTileSource(TileSourceFactory.MAPNIK);
+        binding.map.setMultiTouchControls(true);
+        binding.map.getZoomController().setVisibility(CustomZoomButtonsController.Visibility.ALWAYS);
+        
+        // Default to Dhaka
+        GeoPoint startPoint = new GeoPoint(23.8103, 90.4125);
+        binding.map.getController().setZoom(15.0);
+        binding.map.getController().setCenter(startPoint);
+
+        // Map Click Listener
+        MapEventsReceiver mReceive = new MapEventsReceiver() {
+            @Override
+            public boolean singleTapConfirmedHelper(GeoPoint p) {
+                updateMarker(p);
+                return true;
+            }
+
+            @Override
+            public boolean longPressHelper(GeoPoint p) {
+                updateMarker(p);
+                return true;
+            }
+        };
+
+        MapEventsOverlay evOverlay = new MapEventsOverlay(mReceive);
+        binding.map.getOverlays().add(evOverlay);
+    }
+
+    private void updateMarker(GeoPoint p) {
+        selectedPoint = p;
+        if (marker != null) {
+            binding.map.getOverlays().remove(marker);
+        }
+        marker = new Marker(binding.map);
+        marker.setPosition(p);
+        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+        marker.setTitle("Selected Location");
+        binding.map.getOverlays().add(marker);
+        binding.map.invalidate(); // Refresh map
+    }
+
     @Override
-    public void onMapReady(@NonNull GoogleMap googleMap) {
-        mMap = googleMap;
+    public void onResume() {
+        super.onResume();
+        binding.map.onResume();
+    }
 
-        // Default to university or city location (e.g. Dhaka)
-        LatLng defaultLocation = new LatLng(23.8103, 90.4125);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, 12));
-
-        mMap.setOnMapClickListener(latLng -> {
-            selectedLatLng = latLng;
-            mMap.clear();
-            mMap.addMarker(new MarkerOptions().position(latLng).title("Pinned Location"));
-        });
+    @Override
+    public void onPause() {
+        super.onPause();
+        binding.map.onPause();
     }
 }

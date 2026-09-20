@@ -119,17 +119,20 @@ public class PostFragment extends Fragment {
         binding.progressBar.setVisibility(View.VISIBLE);
         binding.btnSubmit.setEnabled(false);
 
-        String imageId = UUID.randomUUID().toString();
-        StorageReference storageRef = storage.getReference().child("item_images/" + imageId);
-
-        storageRef.putFile(selectedImageUri)
-                .addOnSuccessListener(taskSnapshot -> storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                    saveItemToFirestore(title, category, location, description, type, uri.toString());
-                }))
-                .addOnFailureListener(e -> {
-                    Toast.makeText(requireContext(), "Image upload failed, using default.", Toast.LENGTH_SHORT).show();
-                    saveItemToFirestore(title, category, location, description, type, DEFAULT_IMAGE);
-                });
+        try {
+            android.graphics.Bitmap bitmap = android.provider.MediaStore.Images.Media.getBitmap(requireContext().getContentResolver(), selectedImageUri);
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 40, baos); // Higher compression to be safe
+            byte[] imageBytes = baos.toByteArray();
+            String base64Image = android.util.Base64.encodeToString(imageBytes, android.util.Base64.DEFAULT);
+            
+            saveItemToFirestore(title, category, location, description, type, "data:image/jpeg;base64," + base64Image);
+            
+        } catch (java.io.IOException e) {
+            Toast.makeText(requireContext(), "Image processing failed", Toast.LENGTH_SHORT).show();
+            binding.progressBar.setVisibility(View.GONE);
+            binding.btnSubmit.setEnabled(true);
+        }
     }
 
     private void saveItemToFirestore(String title, String category, String location, String description, String type, String imageUrl) {
@@ -146,7 +149,7 @@ public class PostFragment extends Fragment {
                 description,
                 imageUrl,
                 posterId,
-                "Pending",
+                "Active", // Set to Active by default so it shows up immediately
                 System.currentTimeMillis(),
                 ""
         );

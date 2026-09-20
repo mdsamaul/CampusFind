@@ -78,13 +78,21 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
             binding.chipType.setTextColor(Color.parseColor("#388E3C"));
         }
 
-        // Load image with Glide
+        // Load image (Support both URL and Base64)
         if (item.getImageUrl() != null && !item.getImageUrl().isEmpty()) {
-            Glide.with(binding.ivItemImage.getContext())
-                    .load(item.getImageUrl())
-                    .placeholder(R.drawable.ic_image)
-                    .error(R.drawable.ic_image)
-                    .into(binding.ivItemImage);
+            if (item.getImageUrl().startsWith("data:image")) {
+                // It's a Base64 string
+                byte[] decodedString = android.util.Base64.decode(item.getImageUrl().split(",")[1], android.util.Base64.DEFAULT);
+                android.graphics.Bitmap decodedByte = android.graphics.BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                binding.ivItemImage.setImageBitmap(decodedByte);
+            } else {
+                // It's a regular URL
+                Glide.with(binding.ivItemImage.getContext())
+                        .load(item.getImageUrl())
+                        .placeholder(R.drawable.ic_image)
+                        .error(R.drawable.ic_image)
+                        .into(binding.ivItemImage);
+            }
         } else {
             binding.ivItemImage.setImageResource(R.drawable.ic_image);
         }

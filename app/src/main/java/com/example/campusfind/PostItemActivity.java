@@ -135,19 +135,24 @@ public class PostItemActivity extends AppCompatActivity {
         binding.progressBar.setVisibility(View.VISIBLE);
         binding.btnSubmit.setEnabled(false);
 
-        String imageId = UUID.randomUUID().toString();
-        StorageReference storageRef = storage.getReference().child("item_images/" + imageId);
-
-        storageRef.putFile(selectedImageUri)
-                .addOnSuccessListener(taskSnapshot -> storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                    saveItemToFirestore(title, category, location, description, type, uri.toString());
-                }))
-                .addOnFailureListener(e -> {
-                    // Image upload failed, use placeholder or existing image as per user request
-                    String fallbackUrl = isEditMode ? existingImageUrl : "https://firebasestorage.googleapis.com/v0/b/campusfind-8a6c8.appspot.com/o/item_images%2Fplaceholder.png?alt=media";
-                    Toast.makeText(PostItemActivity.this, "Image upload failed, using default.", Toast.LENGTH_SHORT).show();
-                    saveItemToFirestore(title, category, location, description, type, fallbackUrl);
-                });
+        try {
+            // Convert Image URI to Base64 String (Bits)
+            android.graphics.Bitmap bitmap = android.provider.MediaStore.Images.Media.getBitmap(getContentResolver(), selectedImageUri);
+            
+            // Compress the image to stay under 1MB Firestore limit
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 50, baos); // 50% quality
+            byte[] imageBytes = baos.toByteArray();
+            String base64Image = android.util.Base64.encodeToString(imageBytes, android.util.Base64.DEFAULT);
+            
+            // Save this string directly to Firestore
+            saveItemToFirestore(title, category, location, description, type, "data:image/jpeg;base64," + base64Image);
+            
+        } catch (java.io.IOException e) {
+            Toast.makeText(this, "Failed to process image", Toast.LENGTH_SHORT).show();
+            binding.progressBar.setVisibility(View.GONE);
+            binding.btnSubmit.setEnabled(true);
+        }
     }
 
     private void saveItemToFirestore(String title, String category, String location, String description, String type, String imageUrl) {
@@ -166,7 +171,7 @@ public class PostItemActivity extends AppCompatActivity {
                 description,
                 imageUrl,
                 posterId,
-                "Pending",
+                "Active", // Set to Active by default
                 System.currentTimeMillis(),
                 ""
         );

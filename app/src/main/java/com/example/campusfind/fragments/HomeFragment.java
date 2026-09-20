@@ -99,13 +99,13 @@ public class HomeFragment extends Fragment {
         }
         
         db.collection("items")
-                .whereEqualTo("status", "Active")
                 .orderBy("timestamp", Query.Direction.DESCENDING)
                 .addSnapshotListener((value, error) -> {
                     if (binding == null) return;
                     binding.progressBar.setVisibility(View.GONE);
                     binding.swipeRefresh.setRefreshing(false);
                     if (error != null) {
+                        android.util.Log.e("HomeFragment", "Firestore Error: " + error.getMessage());
                         return;
                     }
 
@@ -126,15 +126,18 @@ public class HomeFragment extends Fragment {
     private void applyFilterAndSearch() {
         displayedList.clear();
         for (Item item : allItemsList) {
+            // Show only Active items to regular users, but you can change this to show Pending too
+            boolean isActive = "Active".equalsIgnoreCase(item.getStatus()) || "Pending".equalsIgnoreCase(item.getStatus());
+            
             boolean matchesFilter = currentTypeFilter.equals("All") || 
-                                   item.getType().equalsIgnoreCase(currentTypeFilter);
+                                   (item.getType() != null && item.getType().equalsIgnoreCase(currentTypeFilter));
             
             boolean matchesSearch = currentSearchQuery.isEmpty() || 
                                    (item.getTitle() != null && item.getTitle().toLowerCase().contains(currentSearchQuery)) ||
                                    (item.getCategory() != null && item.getCategory().toLowerCase().contains(currentSearchQuery)) ||
                                    (item.getLocation() != null && item.getLocation().toLowerCase().contains(currentSearchQuery));
 
-            if (matchesFilter && matchesSearch) {
+            if (isActive && matchesFilter && matchesSearch) {
                 displayedList.add(item);
             }
         }

@@ -58,6 +58,7 @@ public class ItemDetailsActivity extends AppCompatActivity {
                 intent.putExtra("RECEIVER_ID", currentItem.getPosterId());
                 intent.putExtra("ITEM_ID", currentItem.getId());
                 intent.putExtra("ITEM_TITLE", currentItem.getTitle());
+                intent.putExtra("USER_NAME", binding.tvPosterName.getText().toString());
                 startActivity(intent);
             }
         });
@@ -127,10 +128,16 @@ public class ItemDetailsActivity extends AppCompatActivity {
         }
 
         if (currentItem.getImageUrl() != null && !currentItem.getImageUrl().isEmpty()) {
-            Glide.with(this)
-                    .load(currentItem.getImageUrl())
-                    .placeholder(R.drawable.ic_image)
-                    .into(binding.ivDetailImage);
+            if (currentItem.getImageUrl().startsWith("data:image")) {
+                byte[] decodedString = android.util.Base64.decode(currentItem.getImageUrl().split(",")[1], android.util.Base64.DEFAULT);
+                android.graphics.Bitmap decodedByte = android.graphics.BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                binding.ivDetailImage.setImageBitmap(decodedByte);
+            } else {
+                Glide.with(this)
+                        .load(currentItem.getImageUrl())
+                        .placeholder(R.drawable.ic_image)
+                        .into(binding.ivDetailImage);
+            }
         }
 
         boolean isOwner = mAuth.getCurrentUser() != null && mAuth.getCurrentUser().getUid().equals(currentItem.getPosterId());

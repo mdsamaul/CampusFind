@@ -63,9 +63,8 @@ dependencies {
     implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-messaging")
 
-    // Google Maps & Location
-    implementation(libs.play.services.maps)
-    implementation(libs.play.services.location)
+    // OpenStreetMap (Free Alternative to Google Maps)
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)
