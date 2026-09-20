@@ -28,11 +28,13 @@
 
         <activity
             android:name=".LoginActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".RegisterActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".ForgotPasswordActivity"
@@ -45,7 +47,8 @@
 
         <activity
             android:name=".PostItemActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".ItemDetailsActivity"
@@ -53,7 +56,8 @@
 
         <activity
             android:name=".ChatActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".ChatListActivity"
@@ -65,7 +69,8 @@
 
         <activity
             android:name=".EditProfileActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".AdminDashboardActivity"
