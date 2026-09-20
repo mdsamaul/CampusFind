@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary: Lighter Blue for Dark Mode -->
+    <color name="primary">#90CAF9</color>
+    <color name="primary_container">#004881</color>
+    <color name="on_primary">#003258</color>
+    <color name="on_primary_container">#D1E4FF</color>
+
+    <!-- Secondary: Lighter Amber -->
+    <color name="secondary">#FFE082</color>
+    <color name="secondary_container">#594400</color>
+    <color name="on_secondary">#453100</color>
+    <color name="on_secondary_container">#FFECB3</color>
+
+    <!-- Neutrals for Dark Mode -->
+    <color name="background">#1A1C1E</color>
+    <color name="on_background">#E2E2E6</color>
+    <color name="surface">#1A1C1E</color>
+    <color name="on_surface">#E2E2E6</color>
+    <color name="surface_variant">#44474E</color>
+    <color name="on_surface_variant">#C4C6D0</color>
+    <color name="outline">#8E9199</color>
+
+    <color name="black">#FFFFFFFF</color> <!-- Invert or keep? Usually better to keep literal names literal, but user might use it for text. Better to use on_background. -->
+    <color name="white">#FF000000</color>
+</resources>
