@@ -2,6 +2,8 @@ package com.example.campusfind.fragments;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,11 +13,13 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.campusfind.PostItemActivity;
+import com.example.campusfind.R;
 import com.example.campusfind.adapters.ItemAdapter;
 import com.example.campusfind.databinding.FragmentHomeBinding;
 import com.example.campusfind.models.Item;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +29,10 @@ public class HomeFragment extends Fragment {
     private FragmentHomeBinding binding;
     private ItemAdapter adapter;
     private FirebaseFirestore db;
-    private List<Item> itemList;
+    private final List<Item> allItemsList = new ArrayList<>();
+    private final List<Item> displayedList = new ArrayList<>();
+    private String currentTypeFilter = "All";
+    private String currentSearchQuery = "";
 
     @Nullable
     @Override
@@ -39,7 +46,6 @@ public class HomeFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         db = FirebaseFirestore.getInstance();
-        itemList = new ArrayList<>();
         setupRecyclerView();
         fetchItemsFromFirestore();
 
@@ -48,10 +54,41 @@ public class HomeFragment extends Fragment {
         binding.fabPost.setOnClickListener(v -> {
             startActivity(new Intent(requireContext(), PostItemActivity.class));
         });
+
+        setupFilters();
+    }
+
+    private void setupFilters() {
+        // Search listener
+        binding.etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                currentSearchQuery = s.toString().toLowerCase().trim();
+                applyFilterAndSearch();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        // Chip group listener
+        binding.chipGroupFilters.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            if (checkedIds.contains(R.id.chipLost)) {
+                currentTypeFilter = "Lost";
+            } else if (checkedIds.contains(R.id.chipFound)) {
+                currentTypeFilter = "Found";
+            } else {
+                currentTypeFilter = "All";
+            }
+            applyFilterAndSearch();
+        });
     }
 
     private void setupRecyclerView() {
-        adapter = new ItemAdapter(itemList);
+        adapter = new ItemAdapter(displayedList);
         binding.rvItems.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.rvItems.setAdapter(adapter);
     }
@@ -65,6 +102,7 @@ public class HomeFragment extends Fragment {
                 .whereEqualTo("status", "Active")
                 .orderBy("timestamp", Query.Direction.DESCENDING)
                 .addSnapshotListener((value, error) -> {
+                    if (binding == null) return;
                     binding.progressBar.setVisibility(View.GONE);
                     binding.swipeRefresh.setRefreshing(false);
                     if (error != null) {
@@ -72,23 +110,42 @@ public class HomeFragment extends Fragment {
                     }
 
                     if (value != null) {
-                        itemList.clear();
-                        for (com.google.firebase.firestore.DocumentSnapshot doc : value.getDocuments()) {
+                        allItemsList.clear();
+                        for (QueryDocumentSnapshot doc : value) {
                             Item item = doc.toObject(Item.class);
                             if (item != null) {
                                 item.setId(doc.getId());
-                                itemList.add(item);
+                                allItemsList.add(item);
                             }
                         }
-                        adapter.updateList(itemList);
-                        
-                        if (itemList.isEmpty()) {
-                            binding.tvNoItems.setVisibility(View.VISIBLE);
-                        } else {
-                            binding.tvNoItems.setVisibility(View.GONE);
-                        }
+                        applyFilterAndSearch();
                     }
                 });
+    }
+
+    private void applyFilterAndSearch() {
+        displayedList.clear();
+        for (Item item : allItemsList) {
+            boolean matchesFilter = currentTypeFilter.equals("All") || 
+                                   item.getType().equalsIgnoreCase(currentTypeFilter);
+            
+            boolean matchesSearch = currentSearchQuery.isEmpty() || 
+                                   (item.getTitle() != null && item.getTitle().toLowerCase().contains(currentSearchQuery)) ||
+                                   (item.getCategory() != null && item.getCategory().toLowerCase().contains(currentSearchQuery)) ||
+                                   (item.getLocation() != null && item.getLocation().toLowerCase().contains(currentSearchQuery));
+
+            if (matchesFilter && matchesSearch) {
+                displayedList.add(item);
+            }
+        }
+        
+        adapter.updateList(displayedList);
+        
+        if (displayedList.isEmpty()) {
+            binding.tvNoItems.setVisibility(View.VISIBLE);
+        } else {
+            binding.tvNoItems.setVisibility(View.GONE);
+        }
     }
 
     @Override

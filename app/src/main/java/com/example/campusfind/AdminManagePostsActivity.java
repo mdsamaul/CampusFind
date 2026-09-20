@@ -1,6 +1,8 @@
 package com.example.campusfind;
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -9,6 +11,7 @@ import com.example.campusfind.databinding.ActivityAdminManagePostsBinding;
 import com.example.campusfind.models.Item;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,10 +20,11 @@ public class AdminManagePostsActivity extends AppCompatActivity {
 
     private ActivityAdminManagePostsBinding binding;
     private FirebaseFirestore db;
-    private List<Item> allItemsList = new ArrayList<>();
-    private List<Item> filteredList = new ArrayList<>();
+    private final List<Item> allItemsList = new ArrayList<>();
+    private final List<Item> filteredList = new ArrayList<>();
     private ItemAdapter adapter;
     private String currentFilter = "All";
+    private String currentSearchQuery = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +42,26 @@ public class AdminManagePostsActivity extends AppCompatActivity {
 
         setupRecyclerView();
         fetchAllItems();
+        setupFilters();
+    }
 
+    private void setupFilters() {
+        // Search listener
+        binding.etAdminSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                currentSearchQuery = s.toString().toLowerCase().trim();
+                applyFilter();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        // Chip group listener
         binding.chipGroupAdminFilter.setOnCheckedStateChangeListener((group, checkedIds) -> {
             if (checkedIds.contains(R.id.chipAdminLost)) currentFilter = "Lost";
             else if (checkedIds.contains(R.id.chipAdminFound)) currentFilter = "Found";
@@ -56,7 +79,6 @@ public class AdminManagePostsActivity extends AppCompatActivity {
     }
 
     private void fetchAllItems() {
-        // Fetch everything ordered by time, and we will filter locally to avoid index issues
         db.collection("items")
                 .orderBy("timestamp", Query.Direction.DESCENDING)
                 .addSnapshotListener((value, error) -> {
@@ -67,14 +89,14 @@ public class AdminManagePostsActivity extends AppCompatActivity {
 
                     if (value != null) {
                         allItemsList.clear();
-                        for (com.google.firebase.firestore.DocumentSnapshot doc : value.getDocuments()) {
+                        for (QueryDocumentSnapshot doc : value) {
                             Item item = doc.toObject(Item.class);
                             if (item != null) {
                                 item.setId(doc.getId());
                                 allItemsList.add(item);
                             }
                         }
-                        applyFilter(); // Initial display
+                        applyFilter();
                     }
                 });
     }
@@ -82,17 +104,26 @@ public class AdminManagePostsActivity extends AppCompatActivity {
     private void applyFilter() {
         filteredList.clear();
         for (Item item : allItemsList) {
+            boolean matchesFilter = false;
             if ("All".equals(currentFilter)) {
-                filteredList.add(item);
+                matchesFilter = true;
             } else if ("Pending".equals(currentFilter)) {
                 if ("Pending".equalsIgnoreCase(item.getStatus())) {
-                    filteredList.add(item);
+                    matchesFilter = true;
                 }
             } else {
-                // Filter by Type (Lost/Found)
                 if (currentFilter.equalsIgnoreCase(item.getType())) {
-                    filteredList.add(item);
+                    matchesFilter = true;
                 }
+            }
+
+            boolean matchesSearch = currentSearchQuery.isEmpty() || 
+                                   (item.getTitle() != null && item.getTitle().toLowerCase().contains(currentSearchQuery)) ||
+                                   (item.getCategory() != null && item.getCategory().toLowerCase().contains(currentSearchQuery)) ||
+                                   (item.getLocation() != null && item.getLocation().toLowerCase().contains(currentSearchQuery));
+
+            if (matchesFilter && matchesSearch) {
+                filteredList.add(item);
             }
         }
         adapter.updateList(filteredList);

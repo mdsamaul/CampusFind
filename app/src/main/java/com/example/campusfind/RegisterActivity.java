@@ -80,7 +80,14 @@ public class RegisterActivity extends AppCompatActivity {
                             user.setEmail(email);
                             user.setPhone(phone);
                             user.setStudentId(studentId);
-                            user.setRole("student"); // Default role
+                            
+                            // Set role based on email
+                            if (email.contains("admin")) {
+                                user.setRole("admin");
+                            } else {
+                                user.setRole("student");
+                            }
+
                             user.setCreatedAt(System.currentTimeMillis());
                             user.setLastActive(System.currentTimeMillis());
 

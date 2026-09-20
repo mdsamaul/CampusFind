@@ -44,17 +44,19 @@
                     app:startIconDrawable="@drawable/ic_search">
 
                     <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etSearch"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="text" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFilter"
                     style="@style/Widget.Material3.Button.IconButton.Outlined"
                     android:layout_width="56dp"
                     android:layout_height="56dp"
                     android:layout_marginStart="8dp"
-                    app:icon="@drawable/ic_filter"
+                    app:icon="@drawable/ic_search"
                     app:strokeColor="@color/outline" />
             </LinearLayout>
 
@@ -66,6 +68,7 @@
                 app:singleSelection="true">
 
                 <com.google.android.material.chip.Chip
+                    android:id="@+id/chipAll"
                     style="@style/Widget.Material3.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -73,12 +76,14 @@
                     android:text="All" />
 
                 <com.google.android.material.chip.Chip
+                    android:id="@+id/chipLost"
                     style="@style/Widget.Material3.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Lost" />
 
                 <com.google.android.material.chip.Chip
+                    android:id="@+id/chipFound"
                     style="@style/Widget.Material3.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
