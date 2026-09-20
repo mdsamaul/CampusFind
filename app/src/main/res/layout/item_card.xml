@@ -6,8 +6,7 @@
     android:layout_marginHorizontal="16dp"
     android:layout_marginVertical="8dp"
     app:cardCornerRadius="12dp"
-    app:cardElevation="2dp"
-    app:strokeWidth="0dp">
+    app:cardElevation="2dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -16,8 +15,8 @@
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/ivItemImage"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
             android:scaleType="centerCrop"
             android:src="@drawable/app_logo"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -37,18 +36,31 @@
             android:textSize="18sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toStartOf="@+id/chipType"
-            app:layout_constraintStart_toEndOf="@id/ivItemImage"
+            app:layout_constraintStart_toEndOf="@+id/ivItemImage"
             app:layout_constraintTop_toTopOf="parent" />
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chipType"
-            style="@style/Widget.Material3.Chip.Assist"
+            style="@style/Widget.Material3.Chip.Assist.Elevated"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Lost"
             android:textSize="12sp"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:chipMinHeight="32dp"
+            app:layout_constraintEnd_toStartOf="@+id/btnMenu"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageButton
+            android:id="@+id/btnMenu"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Menu"
+            android:src="@android:drawable/ic_menu_more"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/outline" />
 
         <TextView
             android:id="@+id/tvItemCategory"
@@ -60,33 +72,33 @@
             android:textColor="@color/on_surface_variant"
             android:textSize="14sp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/ivItemImage"
-            app:layout_constraintTop_toBottomOf="@id/tvItemTitle" />
+            app:layout_constraintStart_toEndOf="@+id/ivItemImage"
+            app:layout_constraintTop_toBottomOf="@+id/tvItemTitle" />
 
         <TextView
             android:id="@+id/tvItemLocation"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="2dp"
             android:text="Location: Library"
             android:textColor="@color/on_surface_variant"
             android:textSize="14sp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/ivItemImage"
-            app:layout_constraintTop_toBottomOf="@id/tvItemCategory" />
+            app:layout_constraintStart_toEndOf="@+id/ivItemImage"
+            app:layout_constraintTop_toBottomOf="@+id/tvItemCategory" />
 
         <TextView
             android:id="@+id/tvTimePosted"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="8dp"
             android:text="2 hours ago"
             android:textColor="@color/outline"
             android:textSize="12sp"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvItemLocation" />
+            app:layout_constraintTop_toBottomOf="@+id/tvItemLocation" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
-
 </com.google.android.material.card.MaterialCardView>
