@@ -161,6 +161,7 @@ public class PostItemActivity extends AppCompatActivity {
 
         String itemId = isEditMode ? existingItemId : db.collection("items").document().getId();
         String posterId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : "anonymous";
+        String itemStatus = isEditMode ? "Active" : "Pending";
 
         Item item = new Item(
                 itemId,
@@ -171,7 +172,7 @@ public class PostItemActivity extends AppCompatActivity {
                 description,
                 imageUrl,
                 posterId,
-                "Active", // Set to Active by default
+                itemStatus, // Set to Pending for admin approval
                 System.currentTimeMillis(),
                 ""
         );
@@ -180,7 +181,7 @@ public class PostItemActivity extends AppCompatActivity {
                 .set(item)
                 .addOnSuccessListener(aVoid -> {
                     binding.progressBar.setVisibility(View.GONE);
-                    Toast.makeText(PostItemActivity.this, isEditMode ? "Item updated!" : "Item posted successfully!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(PostItemActivity.this, isEditMode ? "Item updated!" : "Post submitted! Waiting for admin approval.", Toast.LENGTH_LONG).show();
                     finish();
                 })
                 .addOnFailureListener(e -> {

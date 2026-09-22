@@ -2,6 +2,7 @@ package com.example.campusfind;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.campusfind.adapters.ChatListAdapter;
@@ -9,12 +10,14 @@ import com.example.campusfind.databinding.ActivityChatListBinding;
 import com.example.campusfind.models.Chat;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ChatListActivity extends AppCompatActivity {
+
+    private static final String TAG = "ChatListActivity";
 
     private ActivityChatListBinding binding;
     private FirebaseFirestore db;
@@ -35,7 +38,9 @@ public class ChatListActivity extends AppCompatActivity {
         setSupportActionBar(binding.toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setTitle("My Chats");
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
+        binding.toolbar.setNavigationOnClickListener(v -> finish());
 
         setupRecyclerView();
         fetchChats();
@@ -47,13 +52,15 @@ public class ChatListActivity extends AppCompatActivity {
             intent.putExtra("CHAT_ID", chat.getChatId());
             intent.putExtra("ITEM_ID", chat.getItemId());
             intent.putExtra("ITEM_TITLE", chat.getItemTitle());
-            
+
             // Determine other user ID
             String otherUserId = "";
-            for (String uid : chat.getParticipants()) {
-                if (!uid.equals(mAuth.getUid())) {
-                    otherUserId = uid;
-                    break;
+            if (chat.getParticipants() != null) {
+                for (String uid : chat.getParticipants()) {
+                    if (mAuth.getUid() != null && !uid.equals(mAuth.getUid())) {
+                        otherUserId = uid;
+                        break;
+                    }
                 }
             }
             intent.putExtra("RECEIVER_ID", otherUserId);
@@ -67,11 +74,12 @@ public class ChatListActivity extends AppCompatActivity {
     private void fetchChats() {
         if (mAuth.getUid() == null) return;
 
+        // Note: No orderBy("timestamp") in query to avoid requiring composite Firestore index
         db.collection("chats")
                 .whereArrayContains("participants", mAuth.getUid())
-                .orderBy("timestamp", Query.Direction.DESCENDING)
                 .addSnapshotListener((value, error) -> {
                     if (error != null) {
+                        Log.e(TAG, "Error fetching chats", error);
                         return;
                     }
                     if (value != null) {
@@ -80,12 +88,14 @@ public class ChatListActivity extends AppCompatActivity {
                             Chat chat = doc.toObject(Chat.class);
                             if (chat != null) {
                                 chat.setChatId(doc.getId());
-                                // We'll need to fetch the other user's name for each chat
-                                // For now, we'll use a placeholder or previous name if available
                                 chatList.add(chat);
                                 fetchOtherUserInfo(chat);
                             }
                         }
+
+                        // Client-side sort by timestamp descending
+                        Collections.sort(chatList, (c1, c2) -> Long.compare(c2.getTimestamp(), c1.getTimestamp()));
+
                         adapter.notifyDataSetChanged();
                     }
                 });
@@ -93,10 +103,12 @@ public class ChatListActivity extends AppCompatActivity {
 
     private void fetchOtherUserInfo(Chat chat) {
         String otherUserId = "";
-        for (String uid : chat.getParticipants()) {
-            if (!uid.equals(mAuth.getUid())) {
-                otherUserId = uid;
-                break;
+        if (chat.getParticipants() != null) {
+            for (String uid : chat.getParticipants()) {
+                if (mAuth.getUid() != null && !uid.equals(mAuth.getUid())) {
+                    otherUserId = uid;
+                    break;
+                }
             }
         }
 
@@ -107,8 +119,10 @@ public class ChatListActivity extends AppCompatActivity {
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
                         String name = documentSnapshot.getString("name");
-                        chat.setOtherUserName(name);
-                        adapter.notifyDataSetChanged();
+                        if (name != null && !name.isEmpty()) {
+                            chat.setOtherUserName(name);
+                            adapter.notifyDataSetChanged();
+                        }
                     }
                 });
     }

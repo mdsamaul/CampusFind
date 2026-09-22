@@ -126,8 +126,8 @@ public class HomeFragment extends Fragment {
     private void applyFilterAndSearch() {
         displayedList.clear();
         for (Item item : allItemsList) {
-            // Show only Active items to regular users, but you can change this to show Pending too
-            boolean isActive = "Active".equalsIgnoreCase(item.getStatus()) || "Pending".equalsIgnoreCase(item.getStatus());
+            // Show only Active (Admin Approved) items to regular users
+            boolean isActive = "Active".equalsIgnoreCase(item.getStatus());
             
             boolean matchesFilter = currentTypeFilter.equals("All") || 
                                    (item.getType() != null && item.getType().equalsIgnoreCase(currentTypeFilter));

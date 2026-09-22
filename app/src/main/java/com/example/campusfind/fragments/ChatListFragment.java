@@ -2,25 +2,30 @@ package com.example.campusfind.fragments;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
+
 import com.example.campusfind.ChatActivity;
 import com.example.campusfind.adapters.ChatListAdapter;
 import com.example.campusfind.databinding.FragmentChatListBinding;
 import com.example.campusfind.models.Chat;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ChatListFragment extends Fragment {
+
+    private static final String TAG = "ChatListFragment";
 
     private FragmentChatListBinding binding;
     private FirebaseFirestore db;
@@ -51,13 +56,15 @@ public class ChatListFragment extends Fragment {
             intent.putExtra("CHAT_ID", chat.getChatId());
             intent.putExtra("ITEM_ID", chat.getItemId());
             intent.putExtra("ITEM_TITLE", chat.getItemTitle());
-            
+
             // Determine other user ID
             String otherUserId = "";
-            for (String uid : chat.getParticipants()) {
-                if (mAuth.getUid() != null && !uid.equals(mAuth.getUid())) {
-                    otherUserId = uid;
-                    break;
+            if (chat.getParticipants() != null) {
+                for (String uid : chat.getParticipants()) {
+                    if (mAuth.getUid() != null && !uid.equals(mAuth.getUid())) {
+                        otherUserId = uid;
+                        break;
+                    }
                 }
             }
             intent.putExtra("RECEIVER_ID", otherUserId);
@@ -71,11 +78,12 @@ public class ChatListFragment extends Fragment {
     private void fetchChats() {
         if (mAuth.getUid() == null) return;
 
+        // Note: No orderBy("timestamp") in query to avoid requiring composite Firestore index
         db.collection("chats")
                 .whereArrayContains("participants", mAuth.getUid())
-                .orderBy("timestamp", Query.Direction.DESCENDING)
                 .addSnapshotListener((value, error) -> {
                     if (error != null) {
+                        Log.e(TAG, "Error fetching chats", error);
                         return;
                     }
                     if (value != null) {
@@ -88,8 +96,12 @@ public class ChatListFragment extends Fragment {
                                 fetchOtherUserInfo(chat);
                             }
                         }
+
+                        // Client-side sort by timestamp descending
+                        Collections.sort(chatList, (c1, c2) -> Long.compare(c2.getTimestamp(), c1.getTimestamp()));
+
                         adapter.notifyDataSetChanged();
-                        
+
                         if (chatList.isEmpty()) {
                             binding.tvEmptyChats.setVisibility(View.VISIBLE);
                         } else {
@@ -101,10 +113,12 @@ public class ChatListFragment extends Fragment {
 
     private void fetchOtherUserInfo(Chat chat) {
         String otherUserId = "";
-        for (String uid : chat.getParticipants()) {
-            if (mAuth.getUid() != null && !uid.equals(mAuth.getUid())) {
-                otherUserId = uid;
-                break;
+        if (chat.getParticipants() != null) {
+            for (String uid : chat.getParticipants()) {
+                if (mAuth.getUid() != null && !uid.equals(mAuth.getUid())) {
+                    otherUserId = uid;
+                    break;
+                }
             }
         }
 
@@ -115,8 +129,10 @@ public class ChatListFragment extends Fragment {
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
                         String name = documentSnapshot.getString("name");
-                        chat.setOtherUserName(name);
-                        adapter.notifyDataSetChanged();
+                        if (name != null && !name.isEmpty()) {
+                            chat.setOtherUserName(name);
+                            adapter.notifyDataSetChanged();
+                        }
                     }
                 });
     }

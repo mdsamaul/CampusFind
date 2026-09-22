@@ -149,7 +149,7 @@ public class PostFragment extends Fragment {
                 description,
                 imageUrl,
                 posterId,
-                "Active", // Set to Active by default so it shows up immediately
+                "Pending", // Set to Pending for admin approval
                 System.currentTimeMillis(),
                 ""
         );
@@ -162,7 +162,7 @@ public class PostFragment extends Fragment {
                     if (binding != null) {
                         binding.progressBar.setVisibility(View.GONE);
                         binding.btnSubmit.setEnabled(true);
-                        Toast.makeText(requireContext(), "Item posted successfully!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(), "Post submitted! Waiting for admin approval.", Toast.LENGTH_LONG).show();
                         resetFields();
                     }
                 })
