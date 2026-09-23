@@ -7,7 +7,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.campusfind.databinding.ActivityItemMapBinding;
 
 import org.osmdroid.config.Configuration;
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase;
+import org.osmdroid.tileprovider.tilesource.XYTileSource;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.CustomZoomButtonsController;
 import org.osmdroid.views.overlay.Marker;
@@ -18,13 +19,27 @@ public class ItemMapActivity extends AppCompatActivity {
     private double lat, lng;
     private String title;
 
+    // Public Open Tile Source - Requires ZERO API Key and NO Billing
+    public static final OnlineTileSourceBase FREE_MAP = new XYTileSource(
+            "OSM_France",
+            0, 19, 256, ".png",
+            new String[]{
+                    "https://a.tile.openstreetmap.fr/osmfr/",
+                    "https://b.tile.openstreetmap.fr/osmfr/",
+                    "https://c.tile.openstreetmap.fr/osmfr/"
+            }
+    );
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        
-        // OSM Configuration
+        // OSM Configuration MUST be loaded BEFORE super.onCreate
         Context ctx = getApplicationContext();
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
+        Configuration.getInstance().setUserAgentValue(getPackageName());
+        Configuration.getInstance().setOsmdroidBasePath(ctx.getCacheDir());
+        Configuration.getInstance().setOsmdroidTileCache(ctx.getCacheDir());
+
+        super.onCreate(savedInstanceState);
 
         binding = ActivityItemMapBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -39,7 +54,7 @@ public class ItemMapActivity extends AppCompatActivity {
     }
 
     private void setupMap() {
-        binding.map.setTileSource(TileSourceFactory.MAPNIK);
+        binding.map.setTileSource(FREE_MAP);
         binding.map.setMultiTouchControls(true);
         binding.map.getZoomController().setVisibility(CustomZoomButtonsController.Visibility.ALWAYS);
 
