@@ -116,6 +116,22 @@ public class ItemDetailsActivity extends AppCompatActivity {
         binding.tvDetailDescription.setText(currentItem.getDescription());
         binding.tvDetailLocation.setText(currentItem.getLocation());
         
+        // Dynamically set Category and Type
+        if (currentItem.getCategory() != null && !currentItem.getCategory().isEmpty()) {
+            binding.chipDetailCategory.setText(currentItem.getCategory());
+        } else {
+            binding.chipDetailCategory.setText("Others");
+        }
+
+        if (currentItem.getType() != null && !currentItem.getType().isEmpty()) {
+            binding.chipDetailType.setText(currentItem.getType());
+            if ("Lost".equalsIgnoreCase(currentItem.getType())) {
+                binding.chipDetailType.setChipBackgroundColorResource(R.color.lost_red);
+            } else {
+                binding.chipDetailType.setChipBackgroundColorResource(R.color.found_green);
+            }
+        }
+        
         if (currentItem.getTimestamp() > 0) {
             SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
             binding.tvDetailDate.setText("Posted on " + sdf.format(new Date(currentItem.getTimestamp())));

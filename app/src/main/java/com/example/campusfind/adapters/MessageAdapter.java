@@ -1,9 +1,12 @@
 package com.example.campusfind.adapters;
 
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import com.bumptech.glide.Glide;
+import com.example.campusfind.R;
 import com.example.campusfind.databinding.ItemMessageReceivedBinding;
 import com.example.campusfind.databinding.ItemMessageSentBinding;
 import com.example.campusfind.models.Message;
@@ -19,16 +22,23 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private final List<Message> messages;
     private static final int TYPE_SENT = 1;
     private static final int TYPE_RECEIVED = 2;
-    private final String currentUserId;
 
     public MessageAdapter(List<Message> messages) {
         this.messages = messages;
-        this.currentUserId = FirebaseAuth.getInstance().getUid();
+    }
+
+    private String getCurrentUserId() {
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            return FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+        return "";
     }
 
     @Override
     public int getItemViewType(int position) {
-        if (currentUserId != null && currentUserId.equals(messages.get(position).getSenderId())) {
+        Message message = messages.get(position);
+        String currentUid = getCurrentUserId();
+        if (message != null && message.getSenderId() != null && !currentUid.isEmpty() && currentUid.equals(message.getSenderId())) {
             return TYPE_SENT;
         } else {
             return TYPE_RECEIVED;
@@ -51,18 +61,57 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         Message message = messages.get(position);
         
-        String timeStr = "Unknown";
+        String timeStr = "";
         if (message.getTimestamp() > 0) {
             SimpleDateFormat sdf = new SimpleDateFormat("hh:mm a", Locale.getDefault());
             timeStr = sdf.format(new Date(message.getTimestamp()));
         }
 
         if (holder instanceof SentViewHolder) {
-            ((SentViewHolder) holder).binding.tvMessage.setText(message.getContent());
-            ((SentViewHolder) holder).binding.tvSentTime.setText(timeStr);
+            SentViewHolder sentHolder = (SentViewHolder) holder;
+            bindMessageContent(message, sentHolder.binding.tvMessage, sentHolder.binding.ivMessageImage);
+            sentHolder.binding.tvSentTime.setText(timeStr);
+
+            if (message.isSeen()) {
+                sentHolder.binding.tvSeenStatus.setText("✓✓ Seen");
+                sentHolder.binding.tvSeenStatus.setTextColor(android.graphics.Color.parseColor("#1976D2"));
+            } else {
+                sentHolder.binding.tvSeenStatus.setText("✓ Delivered");
+                sentHolder.binding.tvSeenStatus.setTextColor(android.graphics.Color.parseColor("#74777F"));
+            }
         } else if (holder instanceof ReceivedViewHolder) {
-            ((ReceivedViewHolder) holder).binding.tvMessage.setText(message.getContent());
-            ((ReceivedViewHolder) holder).binding.tvReceivedTime.setText(timeStr);
+            ReceivedViewHolder recvHolder = (ReceivedViewHolder) holder;
+            bindMessageContent(message, recvHolder.binding.tvMessage, recvHolder.binding.ivMessageImage);
+            recvHolder.binding.tvReceivedTime.setText(timeStr);
+        }
+    }
+
+    private void bindMessageContent(Message message, android.widget.TextView tvMessage, com.google.android.material.imageview.ShapeableImageView ivMessageImage) {
+        String type = message.getType();
+        String content = message.getContent();
+
+        if ("IMAGE".equalsIgnoreCase(type) && content != null && !content.isEmpty()) {
+            ivMessageImage.setVisibility(View.VISIBLE);
+            tvMessage.setVisibility(View.GONE);
+
+            if (content.startsWith("data:image")) {
+                try {
+                    byte[] decodedString = android.util.Base64.decode(content.split(",")[1], android.util.Base64.DEFAULT);
+                    android.graphics.Bitmap decodedByte = android.graphics.BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                    ivMessageImage.setImageBitmap(decodedByte);
+                } catch (Exception e) {
+                    ivMessageImage.setImageResource(R.drawable.ic_image);
+                }
+            } else {
+                Glide.with(ivMessageImage.getContext())
+                        .load(content)
+                        .placeholder(R.drawable.ic_image)
+                        .into(ivMessageImage);
+            }
+        } else {
+            ivMessageImage.setVisibility(View.GONE);
+            tvMessage.setVisibility(View.VISIBLE);
+            tvMessage.setText(content);
         }
     }
 

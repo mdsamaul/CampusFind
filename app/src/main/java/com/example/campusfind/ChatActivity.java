@@ -1,8 +1,17 @@
 package com.example.campusfind;
 
+import android.app.Activity;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
+import android.util.Base64;
 import android.util.Log;
+import android.view.View;
 import android.widget.Toast;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.campusfind.adapters.MessageAdapter;
@@ -15,6 +24,8 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.SetOptions;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,6 +44,16 @@ public class ChatActivity extends AppCompatActivity {
     private String chatId;
     private List<Message> messageList;
     private MessageAdapter adapter;
+
+    private final ActivityResultLauncher<Intent> chatImagePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null && result.getData().getData() != null) {
+                    Uri imageUri = result.getData().getData();
+                    sendImageMessage(imageUri);
+                }
+            }
+    );
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,11 +94,12 @@ public class ChatActivity extends AppCompatActivity {
         }
 
         // Setup UI Toolbar
-        binding.toolbar.setTitle(otherUserName != null && !otherUserName.isEmpty() ? otherUserName : "Chat");
+        binding.tvChatTitle.setText(otherUserName != null && !otherUserName.isEmpty() ? otherUserName : "Chat");
         if (itemTitle != null && !itemTitle.isEmpty()) {
-            binding.toolbar.setSubtitle("Item: " + itemTitle);
+            binding.tvChatSubtitle.setText("Item: " + itemTitle);
+            binding.tvChatSubtitle.setVisibility(View.VISIBLE);
         } else {
-            binding.toolbar.setSubtitle("");
+            binding.tvChatSubtitle.setVisibility(View.GONE);
         }
         binding.toolbar.setNavigationOnClickListener(v -> finish());
 
@@ -89,6 +111,27 @@ public class ChatActivity extends AppCompatActivity {
         listenForMessages();
 
         binding.btnSend.setOnClickListener(v -> sendMessage());
+        binding.tilMessage.setEndIconOnClickListener(v -> openChatImagePicker());
+    }
+
+    private void openChatImagePicker() {
+        Intent intent = new Intent(Intent.ACTION_PICK);
+        intent.setType("image/*");
+        chatImagePickerLauncher.launch(intent);
+    }
+
+    private void sendImageMessage(Uri imageUri) {
+        try {
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 35, baos); // Compress image for Firestore
+            byte[] imageBytes = baos.toByteArray();
+            String base64Image = "data:image/jpeg;base64," + Base64.encodeToString(imageBytes, Base64.DEFAULT);
+
+            saveMessageToFirestore(base64Image, "IMAGE", "📷 [Photo]");
+        } catch (IOException e) {
+            Toast.makeText(this, "Failed to process image", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void loadChatDetailsIfNeeded(String otherUserName) {
@@ -99,7 +142,8 @@ public class ChatActivity extends AppCompatActivity {
                     if (itemTitle == null || itemTitle.isEmpty()) {
                         itemTitle = chat.getItemTitle();
                         if (itemTitle != null && !itemTitle.isEmpty()) {
-                            binding.toolbar.setSubtitle("Item: " + itemTitle);
+                            binding.tvChatSubtitle.setText("Item: " + itemTitle);
+                            binding.tvChatSubtitle.setVisibility(View.VISIBLE);
                         }
                     }
                     if (itemId == null || itemId.isEmpty()) {
@@ -133,7 +177,7 @@ public class ChatActivity extends AppCompatActivity {
                     if (documentSnapshot.exists()) {
                         String name = documentSnapshot.getString("name");
                         if (name != null && !name.isEmpty()) {
-                            binding.toolbar.setTitle(name);
+                            binding.tvChatTitle.setText(name);
                         }
                     }
                 });
@@ -155,6 +199,8 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
+    private boolean isInitialLoad = true;
+
     private void listenForMessages() {
         db.collection("chats").document(chatId).collection("messages")
                 .orderBy("timestamp", Query.Direction.ASCENDING)
@@ -164,17 +210,42 @@ public class ChatActivity extends AppCompatActivity {
                         return;
                     }
                     if (value != null) {
+                        int previousSize = messageList.size();
                         messageList.clear();
                         for (DocumentSnapshot doc : value.getDocuments()) {
                             Message msg = doc.toObject(Message.class);
                             if (msg != null) {
                                 messageList.add(msg);
+
+                                // Mark incoming message as seen in Firestore
+                                if (currentUserId != null && !currentUserId.equals(msg.getSenderId()) && !msg.isSeen()) {
+                                    db.collection("chats").document(chatId)
+                                            .collection("messages").document(doc.getId())
+                                            .update("seen", true);
+                                }
                             }
                         }
                         adapter.notifyDataSetChanged();
                         if (!messageList.isEmpty()) {
                             binding.rvMessages.scrollToPosition(messageList.size() - 1);
+
+                            // Trigger Push Notification for new incoming message
+                            if (!isInitialLoad && messageList.size() > previousSize) {
+                                Message lastMsg = messageList.get(messageList.size() - 1);
+                                if (currentUserId != null && !currentUserId.equals(lastMsg.getSenderId())) {
+                                    String previewText = "IMAGE".equalsIgnoreCase(lastMsg.getType()) ? "📷 Sent a photo" : lastMsg.getContent();
+                                    com.example.campusfind.utils.NotificationHelper.showChatNotification(
+                                            ChatActivity.this,
+                                            binding.tvChatTitle.getText() != null ? binding.tvChatTitle.getText().toString() : "New Message",
+                                            previewText,
+                                            receiverId,
+                                            itemId,
+                                            itemTitle
+                                    );
+                                }
+                            }
                         }
+                        isInitialLoad = false;
                     }
                 });
     }
@@ -185,11 +256,15 @@ public class ChatActivity extends AppCompatActivity {
         if (content.isEmpty()) return;
 
         binding.etMessage.getText().clear();
+        saveMessageToFirestore(content, "TEXT", content);
+    }
 
+    private void saveMessageToFirestore(String content, String type, String lastMessagePreview) {
         String messageId = db.collection("chats").document(chatId).collection("messages").document().getId();
         long timestamp = System.currentTimeMillis();
 
         Message message = new Message(messageId, chatId, currentUserId, content, timestamp);
+        message.setType(type);
 
         // Chat metadata
         List<String> participants = new ArrayList<>();
@@ -200,7 +275,7 @@ public class ChatActivity extends AppCompatActivity {
         Collections.sort(participants);
 
         Chat chatMeta = new Chat(chatId, participants, itemTitle != null ? itemTitle : "", itemId != null ? itemId : "");
-        chatMeta.setLastMessage(content);
+        chatMeta.setLastMessage(lastMessagePreview);
         chatMeta.setTimestamp(timestamp);
 
         // Update both the chat list metadata and the message collection

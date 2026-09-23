@@ -200,14 +200,21 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnLogout"
-                style="@style/Widget.Material3.Button.TextButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
+                android:layout_height="56dp"
                 android:layout_marginTop="24dp"
-                android:text="Logout"
+                android:text="Logout Account"
                 android:textColor="@color/lost_red"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                app:cornerRadius="12dp"
                 app:icon="@drawable/ic_logout"
-                app:iconTint="@color/lost_red" />
+                app:iconGravity="textStart"
+                app:iconPadding="8dp"
+                app:iconTint="@color/lost_red"
+                app:strokeColor="@color/lost_red"
+                app:strokeWidth="1.5dp" />
 
         </LinearLayout>
     </FrameLayout>

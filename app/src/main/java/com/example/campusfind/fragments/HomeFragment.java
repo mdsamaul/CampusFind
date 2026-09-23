@@ -52,7 +52,11 @@ public class HomeFragment extends Fragment {
         binding.swipeRefresh.setOnRefreshListener(this::fetchItemsFromFirestore);
 
         binding.fabPost.setOnClickListener(v -> {
-            startActivity(new Intent(requireContext(), PostItemActivity.class));
+            if (getActivity() instanceof com.example.campusfind.MainActivity) {
+                ((com.example.campusfind.MainActivity) getActivity()).switchToPostTab();
+            } else {
+                startActivity(new Intent(requireContext(), PostItemActivity.class));
+            }
         });
 
         setupFilters();
